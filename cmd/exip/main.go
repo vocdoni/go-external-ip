@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/glendc/go-external-ip"
+	externalip "gitlab.com/vocdoni/go-external-ip"
 )
 
 // CLI Flags
@@ -34,7 +34,8 @@ func main() {
 	consensus := externalip.DefaultConsensus(cfg, logger)
 
 	// retrieve the external ip
-	ip, err := consensus.ExternalIP()
+	ip4, err := consensus.ExternalIP(4)
+	ip6, err := consensus.ExternalIP(6)
 
 	// simple error handling
 	if err != nil {
@@ -43,7 +44,8 @@ func main() {
 	}
 
 	// success, simply output the IP in string format
-	fmt.Println(ip.String())
+	fmt.Println(ip4.String())
+	fmt.Println(ip6.String())
 }
 
 func init() {
