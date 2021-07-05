@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	externalip "gitlab.com/vocdoni/go-external-ip"
+	externalip "github.com/vocdoni/go-external-ip"
 )
 
 // CLI Flags
