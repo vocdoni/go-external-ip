@@ -7,9 +7,6 @@ import (
 	"time"
 )
 
-const IPv6 = 6
-const IPv4 = 4
-
 // DefaultConsensusConfig returns the ConsensusConfig,
 // with the default values:
 //    + Timeout: 30 seconds;
@@ -27,17 +24,17 @@ func DefaultConsensus(cfg *ConsensusConfig, logger *log.Logger) *Consensus {
 	consensus := NewConsensus(cfg, logger)
 
 	// TLS-protected providers
-	consensus.AddVoter(NewHTTPSource("https://icanhazip.com/"), 3, IPv6)
-	consensus.AddVoter(NewHTTPSource("https://myexternalip.com/raw"), 3, IPv4)
+	consensus.AddVoter(NewHTTPSource("https://icanhazip.com/"), 3)
+	consensus.AddVoter(NewHTTPSource("https://myexternalip.com/raw"), 3)
 
 	// Plain-text providers
-	consensus.AddVoter(NewHTTPSource("http://ifconfig.io/ip"), 1, IPv6)
-	consensus.AddVoter(NewHTTPSource("http://checkip.amazonaws.com/"), 1, IPv4)
-	consensus.AddVoter(NewHTTPSource("http://ident.me/"), 1, IPv6)
-	consensus.AddVoter(NewHTTPSource("http://whatismyip.akamai.com/"), 1, IPv4)
-	consensus.AddVoter(NewHTTPSource("http://tnx.nl/ip"), 1, IPv6)
-	consensus.AddVoter(NewHTTPSource("http://myip.dnsomatic.com/"), 1, IPv4)
-	consensus.AddVoter(NewHTTPSource("http://diagnostic.opendns.com/myip"), 1, IPv6)
+	consensus.AddVoter(NewHTTPSource("http://ifconfig.io/ip"), 1)
+	consensus.AddVoter(NewHTTPSource("http://checkip.amazonaws.com/"), 1)
+	consensus.AddVoter(NewHTTPSource("http://ident.me/"), 1)
+	consensus.AddVoter(NewHTTPSource("http://whatismyip.akamai.com/"), 1)
+	consensus.AddVoter(NewHTTPSource("http://tnx.nl/ip"), 1)
+	consensus.AddVoter(NewHTTPSource("http://myip.dnsomatic.com/"), 1)
+	consensus.AddVoter(NewHTTPSource("http://diagnostic.opendns.com/myip"), 1)
 
 	return consensus
 }
@@ -74,8 +71,7 @@ func (cfg *ConsensusConfig) WithTimeout(timeout time.Duration) *ConsensusConfig 
 // Its `ExternalIP` method allows you to ask for your ExternalIP,
 // influenced by all its added voters.
 type Consensus struct {
-	voters4 []voter
-	voters6 []voter
+	voters  []voter
 	timeout time.Duration
 	logger  *log.Logger
 }
@@ -83,7 +79,7 @@ type Consensus struct {
 // AddVoter adds a voter to this consensus.
 // The source cannot be <nil> and
 // the weight has to be of a value of 1 or above.
-func (c *Consensus) AddVoter(source Source, weight, ipversion uint) error {
+func (c *Consensus) AddVoter(source Source, weight uint) error {
 	if source == nil {
 		c.logger.Println("[ERROR] could not add voter: no source given")
 		return ErrNoSource
@@ -92,37 +88,24 @@ func (c *Consensus) AddVoter(source Source, weight, ipversion uint) error {
 		c.logger.Println("[ERROR] could not add voter: weight cannot be 0")
 		return ErrInsufficientWeight
 	}
-	if ipversion == 4 {
-		c.voters4 = append(c.voters4, voter{
-			source: source,
-			weight: weight,
-		})
-	}
-	if ipversion == 6 {
-		c.voters6 = append(c.voters6, voter{
-			source: source,
-			weight: weight,
-		})
-	}
+
+	c.voters = append(c.voters, voter{
+		source: source,
+		weight: weight,
+	})
 	return nil
 }
 
 // ExternalIP requests asynchronously the externalIP from all added voters,
 // returning the IP which received the most votes.
 // The returned IP will always be valid, in case the returned error is <nil>.
-func (c *Consensus) ExternalIP(ipversion uint) (net.IP, error) {
+func (c *Consensus) ExternalIP() (net.IP, error) {
 	voteCollection := make(map[string]uint)
 	var vlock sync.Mutex
 	var wg sync.WaitGroup
-	var thisVoters []voter
-	if ipversion == IPv4 {
-		thisVoters = c.voters4
-	}
-	if ipversion == IPv6 {
-		thisVoters = c.voters6
-	}
+
 	// start all source Requests on a seperate goroutine
-	for _, v := range thisVoters {
+	for _, v := range c.voters {
 		wg.Add(1)
 		go func(v voter) {
 			defer wg.Done()
@@ -161,8 +144,5 @@ func (c *Consensus) ExternalIP(ipversion uint) (net.IP, error) {
 
 	// as the found IP was parsed previously,
 	// we know it cannot be nil and is valid
-	if ipversion == IPv4 {
-		return net.ParseIP(externalIP).To4(), nil
-	}
-	return net.ParseIP(externalIP).To16(), nil
+	return net.ParseIP(externalIP), nil
 }

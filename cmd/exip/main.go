@@ -34,8 +34,7 @@ func main() {
 	consensus := externalip.DefaultConsensus(cfg, logger)
 
 	// retrieve the external ip
-	ip4, err := consensus.ExternalIP(4)
-	ip6, err := consensus.ExternalIP(6)
+	ip, err := consensus.ExternalIP()
 
 	// simple error handling
 	if err != nil {
@@ -44,8 +43,7 @@ func main() {
 	}
 
 	// success, simply output the IP in string format
-	fmt.Println(ip4.String())
-	fmt.Println(ip6.String())
+	fmt.Println(ip.String())
 }
 
 func init() {
