@@ -2,6 +2,12 @@
 
 A Golang library to get your external ip from multiple services.
 
+### FORK DEPRECATED
+
+this fork was made to implement dualstack support. But it does have some issues (see #1) and upstream has since then merged an improved version, making this fork unnecessary.
+
+Please use upstream https://godoc.org/github.com/GlenDC
+
 ## TODO
 
 + Unit-Tests + CI (Travis);
